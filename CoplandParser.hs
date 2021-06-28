@@ -81,7 +81,7 @@ aspcExpr :: Parser ASP
 aspcExpr = do i <- reserved lexer "ASPC"
               id <- read <$> many1 digit 
               void spaces 
-              arg <- sepBy (many (noneOf " ,\")")) (char ',')
+              arg <- sepBy (many (noneOf " ,\"()-+@_!#")) (char ',')
               return (ASPC id arg)
 
 
@@ -94,22 +94,22 @@ atExpr :: Parser T
 atExpr = do i <- reserved lexer "@"
             pl <- read <$> many1 digit 
             void spaces
-            ph <- try parseAll <|> expr
-            return (AT pl ph)
+            ph <- expr
+            try (lnExpr (AT pl ph)) <|> return (AT pl ph)
 
 
 --SEQUENTIAL BRANCHING Parser
 brsExpr :: T -> Parser T
 brsExpr p1 = try $ do
                    b <- bothBranchesS
-                   p2 <- try parseAll <|> expr
+                   p2 <- expr
                    return (BRS b p1 p2)
 
 --PARALLEL BRANCHING Parser
 brpExpr :: T -> Parser T
 brpExpr p1 = try $ do
                    b <- bothBranchesP
-                   p2 <- try parseAll <|> expr
+                   p2 <- expr
                    return (BRP b p1 p2)
 
 --Branch helper parsers
@@ -139,13 +139,13 @@ bothBranchesP = do b1 <- branches
 --LINEAR Parser
 lnExpr :: T -> Parser T
 lnExpr p1 = try $ do i <- reserved lexer "->"
-                     p2 <- try parseLn <|> expr
-                     try (parseAllWInput (LN p1 p2)) <|> return (LN p1 p2)
+                     p2 <- try atExpr <|> expr
+                     return (LN p1 p2)
 
 --Parentheses Parser
 parenz :: Parser T
 parenz = do void $ char '('
-            e <- try parseAll <|> expr 
+            e <-  expr 
             void $ char ')'
             void spaces
             try (parseAllWInput e) <|> return e
@@ -163,12 +163,6 @@ parseAll = do i <- expr
 parseAllWInput :: T -> Parser T
 parseAllWInput i = try (brsExpr i) <|> try (brpExpr i) <|> try (lnExpr i) <|> return i
 
-parseLn :: Parser T
-parseLn = do i <- expr
-             try (lnExpr i) <|> return i
-
-parseBranches :: T -> Parser T 
-parseBranches ph = try (brsExpr ph) <|> try (brpExpr ph) <|> return ph
 
 --total parser
 parsePhrase :: String -> T
