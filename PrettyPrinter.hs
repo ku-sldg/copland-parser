@@ -14,17 +14,17 @@ pprintCop (ASPT n)
           | show n == "MT"  = "{}"
 pprintCop (ASPT (ASPC n x)) = "ASPC " ++ show n ++ " " ++ toStr x
 pprintCop (LN n m) = pprintCop n ++ " -> " ++ pprintCop m
-pprintCop (AT n m) = "@ " ++ show n ++ " " ++ pprintCop m
+pprintCop (AT n m) = "@ " ++ show n ++ " " ++ "(" ++ pprintCop m ++ ")"
 pprintCop (BRS (b1,b2) n m) 
-          | show b1 == "NONE" && show b2 == "NONE" = "(" ++ pprintCop n ++ " -<- "  ++ pprintCop m ++ ")"
-          | show b1 == "ALL"  && show b2 == "NONE" = "(" ++ pprintCop n ++ " +<- " ++ pprintCop m ++ ")"
-          | show b1 == "NONE" && show b2 == "ALL"  = "(" ++ pprintCop n ++ " -<+ " ++ pprintCop m ++ ")"
-          | otherwise                              = "(" ++ pprintCop n ++ " +<+ " ++ pprintCop m ++ ")"
+          | show b1 == "NONE" && show b2 == "NONE" =  "(" ++ pprintCop n ++ ")" ++ " -<- "  ++ pprintCop m 
+          | show b1 == "ALL"  && show b2 == "NONE" =  "(" ++ pprintCop n ++ ")" ++ " +<- " ++ pprintCop m 
+          | show b1 == "NONE" && show b2 == "ALL"  =  "(" ++ pprintCop n ++ ")" ++ " -<+ " ++ pprintCop m 
+          | otherwise                              =  "(" ++ pprintCop n ++ ")" ++ " +<+ " ++ pprintCop m 
 pprintCop (BRP (b1,b2) n m) 
-          | show b1 == "NONE" && show b2 == "NONE" = "(" ++ pprintCop n ++ " -~- " ++ pprintCop m ++ ")"
-          | show b1 == "ALL"  && show b2 == "NONE" = "(" ++ pprintCop n ++ " +~- " ++ pprintCop m ++ ")"
-          | show b1 == "NONE" && show b2 == "ALL"  = "(" ++ pprintCop n ++ " -~+ " ++ pprintCop m ++ ")"
-          | otherwise                              = "(" ++ pprintCop n ++ " +~+ " ++ pprintCop m ++ ")"
+          | show b1 == "NONE" && show b2 == "NONE" =  "(" ++ pprintCop n ++ ")" ++ " -~- " ++ pprintCop m 
+          | show b1 == "ALL"  && show b2 == "NONE" =  "(" ++ pprintCop n ++ ")" ++ " +~- " ++ pprintCop m 
+          | show b1 == "NONE" && show b2 == "ALL"  =  "(" ++ pprintCop n ++ ")" ++ " -~+ " ++ pprintCop m 
+          | otherwise                              =  "(" ++ pprintCop n ++ ")" ++ " +~+ " ++ pprintCop m 
 pprintCop _ = error "not a datatype"
 
 

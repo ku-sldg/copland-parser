@@ -1,6 +1,11 @@
 
 {-# LANGUAGE GADTs, FlexibleContexts #-}
 
+import Test.QuickCheck
+import Test.QuickCheck.Gen
+import Test.QuickCheck.Function
+import Test.QuickCheck.Monadic
+
 -- Imports for Parsec
 import Control.Monad
 import Text.ParserCombinators.Parsec
@@ -11,6 +16,7 @@ import Text.Parsec.Char
 import CoplandLang
 --import Data.List
 import PrettyPrinter
+import CoplandQC
 
 --Takes a String to a Haskell AST
 languageDef =
@@ -161,10 +167,12 @@ parseLn :: Parser T
 parseLn = do i <- expr
              try (lnExpr i) <|> return i
 
-parseBranches :: Parser T 
-parseBranches = do i <- expr
-                   try (brsExpr i) <|> try (brpExpr i) <|> return i
+parseBranches :: T -> Parser T 
+parseBranches ph = try (brsExpr ph) <|> try (brpExpr ph) <|> return ph
 
 --total parser
 parsePhrase :: String -> T
 parsePhrase = parseString expr
+
+checkSame :: T -> T -> Bool 
+checkSame t1 t2 = pprintCop t1 == pprintCop t2
