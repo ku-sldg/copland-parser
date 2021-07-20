@@ -39,33 +39,6 @@ str [x]    = [x]
 str (x:xs) = [x] ++ str xs
 
 
-{-
-COPLAND IN COQ
-
-Inductive SP : Type :=
-  | ALL 
-  | NONE.
- 
-Inductive ASP : Type :=
-  | CPY
-  | SIG
-  | HSH
-  | ASPC (ASP_ID : nat).
-
-Check ASPC 13.
-
-Inductive T : Type :=
-  | ASPT (a : ASP)
-  | AT (Pl : nat) (t : T)
-  | LN (t1 t2 : T)
-  | BRS (s1 s2 : SP) (t1 t2 : T)
-  | BRP (s1 s2 : SP) (t1 t2 : T).
-  
-Check ASPT (CPY).
-Check AT (123) (AT 45 (ASPT CPY)).
-Check BRP ALL ALL (ASPT CPY) (ASPT HSH).
--}
-
 -- Haskell AST to string of Coq, needs a little more work
 
 toStrCoq :: [[Char]] -> String
