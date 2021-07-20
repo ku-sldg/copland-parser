@@ -94,7 +94,7 @@ atExpr :: Parser T
 atExpr = do i <- reserved lexer "@"
             pl <- read <$> many1 digit 
             void spaces
-            ph <- expr
+            ph <- try parseAll <|> expr
             try (lnExpr (AT pl ph)) <|> return (AT pl ph)
 
 
@@ -169,4 +169,4 @@ parsePhrase :: String -> T
 parsePhrase = parseString expr
 
 checkSame :: T -> T -> Bool 
-checkSame t1 t2 = pprintCop t1 == pprintCop t2
+checkSame t1 t2 = pprint t1 == pprint t2

@@ -1,4 +1,4 @@
-
+--quickCheck (\t -> checkSame (parsePhrase (pprint t)) t)
 
 module CoplandQC where
 
