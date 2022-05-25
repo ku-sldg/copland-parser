@@ -11,8 +11,8 @@ pprint (ASPT n)
           | show n == "CPY" = "_"
           | show n == "SIG" = "!"
           | show n == "HSH" = "#"
-          | show n == "MT"  = "{}"
-pprint (ASPT (ASPC n x)) = "ASPC " ++ show n ++ " " ++ toStr x
+          | show n == "NULL"  = "{}"
+pprint (ASPT (SPS s1 plc s2)) = show s1 ++ " " ++ show plc ++ " " ++ show s2
 pprint (LN n m) = pprint n ++ " -> " ++ pprint m
 pprint (AT n m) = "@ " ++ show n ++ " " ++ "(" ++ pprint m ++ ")"
 pprint (BRS (b1,b2) n m) 
@@ -65,8 +65,10 @@ pprintCoq (ASPT n)
           | show n == "CPY" = "ASPT CPY"
           | show n == "SIG" = "ASPT SIG"
           | show n == "HSH" = "ASPT HSH"
+          | show n == "NULL" = "ASPT NULL"
 -- string needs quotes for coq, but cant have back slashes. currently does
-pprintCoq (ASPT (ASPC n x)) = "ASPT (ASPC " ++ show n ++ " " ++ toStrCoq x ++ ")"
+-- TODO: This Coq translation is certainly not correct yet
+pprintCoq (ASPT (SPS s1 plc s2)) = "ASPT (ASPC " ++ show s1 ++ " " ++ show plc ++ " " ++ show s2 ++ ")"
 pprintCoq (LN n m) = "LN " ++ "(" ++ pprintCoq n ++ ") (" ++ pprintCoq m ++ ")"
 pprintCoq (AT n m) = "AT " ++ show n ++ " (" ++ pprintCoq m ++ ")"
 pprintCoq (BRS (b1,b2) n m) 

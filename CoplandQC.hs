@@ -23,6 +23,8 @@ genHsh :: Gen T
 genHsh = return (ASPT HSH)
 genSig :: Gen T
 genSig = return (ASPT SIG)
+genNull :: Gen T
+genNull = return (ASPT NULL)
 
 genChar :: Gen Char
 genChar = elements ['a'..'z']
@@ -30,11 +32,25 @@ genChar = elements ['a'..'z']
 genString :: Gen String 
 genString = listOf genChar
 
+genDig :: Gen SYMBOL
+genDig = do dig <- chooseInt (0, 1000000)
+            return ("p" ++ (show dig))
+
+genSym :: Gen SYMBOL
+genSym = do first <- genChar
+            rem <- listOf (elements (['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'] ++ ['_']))
+            return ([first] ++ rem)
+
+genPlace :: Gen PLACE
+genPlace = do plc <- oneof [genSym, genDig]
+              return (PLC plc)
+
 genAspc :: Gen T
 genAspc = 
-  do id <- choose (1,100)
-     arg <- listOf genString
-     return (ASPT (ASPC id arg))
+  do sym1 <- genSym
+     place <- genPlace
+     sym2 <- genSym
+     return (ASPT (SPS sym1 place sym2))
 
 genAllB :: Gen SP
 genAllB = return ALL 
@@ -43,12 +59,12 @@ genNoneB = return NONE
 
 genASPT :: Gen T
 genASPT =
-  do oneof [genCpy, genHsh, genSig, genAspc]
+  do oneof [genCpy, genHsh, genSig, genNull, genAspc]
 
 
 genAt :: Int -> Gen T
 genAt n =
-  do pl <- choose (1, 100)
+  do pl <- genPlace
      ph <- genT n
      return (AT pl ph)
 

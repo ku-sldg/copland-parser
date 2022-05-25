@@ -5,32 +5,38 @@
 
 module CoplandLang where
 
-{- Identify Places (protocol participants) -}
-type Pl = Int
-{-  Arguments to measurement commands -}
-type ARG = String
-{- Identify ASP (Attestation Service Provider) -}
-type ASP_ID = Int
-
 {-  Evidence splitting functions.
     ALL-  keep all evidence
     NONE- keep no evidence -}
 data SP = ALL | NONE
         deriving (Read,Show)
 
+type SYMBOL = String
+
+data PLACE = PLC SYMBOL
+  deriving (Read,Show)
+
 -- Primitive Measurement Term.
 data ASP
   = CPY
   | SIG
   | HSH
-  | ASPC ASP_ID [ARG]
+  | NULL
+  -- | ASPC ASP_ID [ARG]
+  | SPS SYMBOL PLACE SYMBOL
   deriving (Read,Show)
   
 -- Copland Term.
 data T
   = ASPT ASP
-  | AT Pl T
+  | AT PLACE T
+  | AT_S PLACE T
   | LN T T
   | BRS (SP,SP) T T
   | BRP (SP,SP) T T  
   deriving (Read,Show)
+
+data COPLAND = STAR PLACE T
+              | COP_PHRASE T
+              | COMMENT String
+                deriving (Read,Show)

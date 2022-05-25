@@ -20,127 +20,118 @@ import CoplandQC
 
 --Takes a String to a Haskell AST
 languageDef =
-  javaStyle { identStart = letter
-            , identLetter = alphaNum
+  javaStyle { identStart = lower
+            , identLetter = (alphaNum <|> char '_')
             , reservedNames = [ "_"
                               , "!"
                               , "#"
-                              , "ASPC"
                               , "+"
                               , "-"
                               , "@"
                               , "{}"
+                              , "["
+                              , "]"
                               ]
             , reservedOpNames = ["->"]
+            , commentLine = "%"
             }
+
+expr  = buildExpressionParser table term <?> "phrase"
+
+term    = parenz
+          <|> gen_atExpr
+          <|> asptExpr
+          <?> "unknown input"
+
+table   :: OperatorTable Char () T
+table   = [ 
+  [ inFix "->" LN AssocRight ],
+  [
+    inFix "-<-" (BRS (NONE,NONE)) AssocRight, 
+    inFix "-<+" (BRS (NONE, ALL)) AssocNone,
+    inFix "+<-" (BRS (ALL, NONE)) AssocNone,
+    inFix "+<+" (BRS (ALL, ALL)) AssocNone,
+    inFix "-~-" (BRP (NONE, NONE)) AssocNone,
+    inFix "-~+" (BRP (NONE, ALL)) AssocNone,
+    inFix "+~-" (BRP (ALL, NONE)) AssocNone,
+    inFix "+~+" (BRP (ALL, ALL)) AssocNone]]
 
 lexer = makeTokenParser languageDef
 
-inFix :: String -> (a -> a -> a) -> Assoc -> Operator Char st a
-inFix o c  = Infix (reservedOp lexer o >> return c) 
-preFix :: String -> (a -> a) -> Operator Char st a
-preFix o c = Prefix (reservedOp lexer o >> return c)
-
-postFix :: String -> (a -> a) -> Operator Char st a
-postFix o c = Postfix (reservedOp lexer o >> return c)
+inFix o c assoc = Infix (do { reservedOp lexer o; return c }) assoc
 
 parseString p str =
   case parse p "" str of
     Left e -> error $ show e
     Right r -> r
 
-expr :: Parser T
-expr = buildExpressionParser operators term
-
-operators :: [[Operator Char st T]]
-operators = [
-   -- [ inFix "->" LN AssocRight ]
-  ]
-
-
 --ASPT Parser
+chooseASP :: Parser ASP
+chooseASP = cpyExpr <|> sigExpr <|> hshExpr <|> nullExpr <|> aspcExpr 
+
+
 asptExpr :: Parser T
 asptExpr = try $ do i <- chooseASP
                     void spaces
-                    parseAllWInput (ASPT i) <|> return (ASPT i)
-                    
+                    return (ASPT i)                    
 
 cpyExpr :: Parser ASP
-cpyExpr = do i <- reserved lexer "_"
+cpyExpr = do char '_'
              return CPY
 
 sigExpr :: Parser ASP
-sigExpr = do i <- reserved lexer "!"
+sigExpr = do char '!'
              return SIG
 
 hshExpr :: Parser ASP
-hshExpr = do i <- reserved lexer "#"
+hshExpr = do char '#'
              return HSH
 
+nullExpr :: Parser ASP
+nullExpr = do string "{}"
+              return NULL
+
 aspcExpr :: Parser ASP
-aspcExpr = do i <- reserved lexer "ASPC"
-              id <- read <$> many1 digit 
+aspcExpr = do sym1 <- symbolExpr
               void spaces 
-              arg <- sepBy (many (noneOf " ,\"()-+@_!#")) (char ',')
-              return (ASPC id arg)
+              place <- placeExpr
+              void spaces 
+              sym2 <- symbolExpr
+              void spaces 
+              -- No args in def -- arg <- sepBy (many (noneOf " ,\"()-+@_!#")) (char ',')
+              return (SPS sym1 place sym2)
 
+-- When a place is a sequence of digits, it is equivalent to the symbol that results from adding the letter p to the beginning of the digits. 
+digitsExpr :: Parser SYMBOL
+digitsExpr = do dig <- natural lexer
+                return ("p" ++ (show dig))
 
-chooseASP :: Parser ASP
-chooseASP = cpyExpr <|> sigExpr <|> hshExpr <|> aspcExpr
+symbolExpr :: Parser SYMBOL
+symbolExpr = do sym <- (identifier lexer <?> "valid identifier starting with lowercase, remainder alpha-numeric + '_'")
+                return sym 
 
+placeExpr :: Parser PLACE
+placeExpr = do plc <- symbolExpr <|> digitsExpr <?> "place"
+               return (PLC plc)
 
 -- AT Parser
-atExpr :: Parser T
-atExpr = do i <- reserved lexer "@"
-            pl <- read <$> many1 digit 
-            void spaces
-            ph <- try parseAll <|> expr
-            try (lnExpr (AT pl ph)) <|> return (AT pl ph)
+atExpr :: PLACE -> Parser T
+atExpr pl = do ph <- expr
+               return (AT pl ph)
 
+-- AT_S Parser (with square brackets)
+at_SExpr :: PLACE -> Parser T
+at_SExpr pl = do char '['
+                 ph <- expr
+                 char ']' <?> "closing square bracket"
+                 return (AT_S pl ph)
 
---SEQUENTIAL BRANCHING Parser
-brsExpr :: T -> Parser T
-brsExpr p1 = try $ do
-                   b <- bothBranchesS
-                   p2 <- expr
-                   return (BRS b p1 p2)
-
---PARALLEL BRANCHING Parser
-brpExpr :: T -> Parser T
-brpExpr p1 = try $ do
-                   b <- bothBranchesP
-                   p2 <- expr
-                   return (BRP b p1 p2)
-
---Branch helper parsers
-allBranch :: Parser SP
-allBranch = do i <- reserved lexer "+"
-               return ALL
-
-noneBranch :: Parser SP
-noneBranch = do i <- reserved lexer "-"
-                return NONE
-
-branches :: Parser SP
-branches = allBranch <|> noneBranch
-
-bothBranchesS :: Parser (SP, SP)
-bothBranchesS = do b1 <- branches
-                   void $ char '<'
-                   b2 <- branches
-                   return (b1, b2)
-
-bothBranchesP :: Parser (SP, SP)
-bothBranchesP = do b1 <- branches
-                   void $ char '~'
-                   b2 <- branches
-                   return (b1, b2)
-
---LINEAR Parser
-lnExpr :: T -> Parser T
-lnExpr p1 = try $ do i <- reserved lexer "->"
-                     p2 <- try atExpr <|> expr
-                     return (LN p1 p2)
+gen_atExpr :: Parser T
+gen_atExpr = do char '@'
+                place <- placeExpr
+                void spaces
+                ph <- at_SExpr place <|> (atExpr place)
+                return ph
 
 --Parentheses Parser
 parenz :: Parser T
@@ -148,25 +139,42 @@ parenz = do void $ char '('
             e <-  expr 
             void $ char ')'
             void spaces
-            try (parseAllWInput e) <|> return e
+            return e
 
-term = parenz
-    <|> atExpr
-    <|> asptExpr
-    <?> "unknown input"
-
---helper parsers
-parseAll :: Parser T
-parseAll = do i <- expr
-              try (brsExpr i) <|> try (brpExpr i) <|> try (lnExpr i) <|> return i
-
-parseAllWInput :: T -> Parser T
-parseAllWInput i = try (brsExpr i) <|> try (brpExpr i) <|> try (lnExpr i) <|> return i
-
+parseExpr   :: Parser T
+parseExpr = do phr <- expr
+               (do {spaces; skipMany1 newline}) <|> eof <?> "end of phrase"
+               return phr
 
 --total parser
 parsePhrase :: String -> T
-parsePhrase = parseString expr
+parsePhrase str = case parse parseExpr "" str of
+                    Left e -> error $ show e
+                    Right r -> r
+
+coplandStarExpr :: Parser COPLAND
+coplandStarExpr = do char '*'
+                     void spaces
+                     place <- placeExpr
+                     void spaces
+                     char ':'
+                     void spaces
+                     phr <- expr
+                     return (STAR place phr)
+
+coplandS_expr :: Parser COPLAND
+coplandS_expr = do phr <- expr
+                   return (COP_PHRASE phr)
+
+coplandExpr :: Parser COPLAND
+coplandExpr = do cop <- (coplandStarExpr <|> coplandS_expr)
+                 return cop
+
+--total parser
+parseCop :: String -> COPLAND
+parseCop str = case parse coplandExpr "" str of
+                    Left e -> error $ show e
+                    Right r -> r
 
 checkSame :: T -> T -> Bool 
 checkSame t1 t2 = pprint t1 == pprint t2
