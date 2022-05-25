@@ -2,8 +2,10 @@
 
 module CoplandQC where
 
+import CoplandParser
 import CoplandLang
 import PrettyPrinter
+import Utils
 
 --import QuickCheck
 --import System.Random
@@ -11,12 +13,8 @@ import Test.QuickCheck
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Function
 import Test.QuickCheck.Monadic
+import Data.Maybe
 
-
-
-instance Arbitrary T where
-  arbitrary = sized $ \n -> genT (rem n 10)
-    
 genCpy :: Gen T
 genCpy = return (ASPT CPY)
 genHsh :: Gen T
@@ -25,6 +23,9 @@ genSig :: Gen T
 genSig = return (ASPT SIG)
 genNull :: Gen T
 genNull = return (ASPT NULL)
+
+genInt :: Gen Int
+genInt = chooseInt (0,100)
 
 genChar :: Gen Char
 genChar = elements ['a'..'z']
@@ -61,6 +62,9 @@ genASPT :: Gen T
 genASPT =
   do oneof [genCpy, genHsh, genSig, genNull, genAspc]
 
+genParen :: Int -> Gen T
+genParen n = do ph <- genT n
+                return (PAREN ph)
 
 genAt :: Int -> Gen T
 genAt n =
@@ -70,8 +74,8 @@ genAt n =
 
 genLn :: Int -> Gen T
 genLn n =
-  do p1 <- genT3 n
-     p2 <- genT3 n
+  do p1 <- genT3 n -- Cannot have recursive left arrow
+     p2 <- genT2 n
      return (LN p1 p2)
 
 genBrs :: Int -> Gen T
@@ -86,8 +90,8 @@ genBrp :: Int -> Gen T
 genBrp n =
   do b1 <- do oneof [genAllB, genNoneB]
      b2 <- do oneof [genAllB, genNoneB]
-     p1 <- genT2 n
-     p2 <- genT2 n
+     p1 <- genT2 n -- need to not have recursive left branch
+     p2 <- genT n
      return (BRP (b1, b2) p1 p2)
 
 
@@ -95,23 +99,41 @@ genT :: Int -> Gen T
 genT 0 =
   do genASPT
 genT n = 
-  do oneof [genASPT, genLn (n-1), genAt (n-1), genBrs (n-1), genBrp (n-1)]
+  do oneof [genASPT, genParen (n-1), genLn (n-1), genAt (n-1), genBrs (n-1), genBrp (n-1)]
 
 genT2 :: Int -> Gen T
 genT2 0 =
   do genASPT
 genT2 n = 
-  do oneof [genASPT, genLn (n-1), genBrs (n-1), genBrp (n-1)]
+  do oneof [genASPT, genParen (n-1), genLn (n-1)]
 
 genT3 :: Int -> Gen T
 genT3 0 =
   do genASPT
 genT3 n = 
-  do oneof [genASPT, genLn (n-1)]
+  do oneof [genASPT, genParen (n-1)]
 
-{-
-testEval :: Int -> IO ()
-testEval n = quickCheckWith stdArgs {maxSuccess = n}
-  (\t -> checkSame (interp (pprintCop t)) (evalT t))
+instance Arbitrary T where
+  arbitrary = sized $ \n -> genT (rem n 10)
 
--}
+checkTerms :: IO ()
+checkTerms = quickCheckWith stdArgs {maxSuccess = 100} quickCheck_parsable
+
+testCoq_Trans :: IO [String]
+testCoq_Trans = do  let x = sample' (genT 10)
+                    x' <- x
+                    let x'' = map (\x' -> printCoq x') (map (\x' -> (COP_PHRASE x')) (x'))
+                    let filt = filter (\x -> if x == Nothing then False else True) x''
+                    let mapped = map (\x -> do (s,e) <- x 
+                                               return s) filt
+                    let mapped2 = map (\x -> fromJust x) mapped
+                    return mapped2
+
+out_test = do let file = "coq_test.v"
+              out <- testCoq_Trans
+              let out' = foldl (\x -> \a -> x ++ "\nCompute " ++ a ++ ".") "" out
+              writeFile file (out')
+
+
+checkParser :: Int -> IO ()
+checkParser n = quickCheckWith stdArgs {maxSuccess = n} involutiveAST

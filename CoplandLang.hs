@@ -9,12 +9,12 @@ module CoplandLang where
     ALL-  keep all evidence
     NONE- keep no evidence -}
 data SP = ALL | NONE
-        deriving (Read,Show)
+        deriving (Read,Show,Eq)
 
 type SYMBOL = String
 
 data PLACE = PLC SYMBOL
-  deriving (Read,Show)
+  deriving (Read,Show,Eq)
 
 -- Primitive Measurement Term.
 data ASP
@@ -24,7 +24,7 @@ data ASP
   | NULL
   -- | ASPC ASP_ID [ARG]
   | SPS SYMBOL PLACE SYMBOL
-  deriving (Read,Show)
+  deriving (Read,Show,Eq)
   
 -- Copland Term.
 data T
@@ -33,10 +33,11 @@ data T
   | AT_S PLACE T
   | LN T T
   | BRS (SP,SP) T T
-  | BRP (SP,SP) T T  
-  deriving (Read,Show)
+  | BRP (SP,SP) T T
+  | PAREN T
+  deriving (Read,Show,Eq)
 
 data COPLAND = STAR PLACE T
               | COP_PHRASE T
               | COMMENT String
-                deriving (Read,Show)
+                deriving (Read,Show,Eq)

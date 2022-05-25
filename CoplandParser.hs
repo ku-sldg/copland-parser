@@ -1,6 +1,8 @@
 
 {-# LANGUAGE GADTs, FlexibleContexts #-}
 
+module CoplandParser where
+
 import Test.QuickCheck
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Function
@@ -14,9 +16,7 @@ import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Token
 import Text.Parsec.Char
 import CoplandLang
---import Data.List
 import PrettyPrinter
-import CoplandQC
 
 --Takes a String to a Haskell AST
 languageDef =
@@ -46,15 +46,18 @@ term    = parenz
 table   :: OperatorTable Char () T
 table   = [ 
   [ inFix "->" LN AssocRight ],
+  -- TODO: Technically we introduce a precdence here but the spec says otherwise
+  -- Additionaly, this leaves ambiguity in our grammer
+  -- TODO: Arbitrary did right associativity here, but not sure
   [
-    inFix "-<-" (BRS (NONE,NONE)) AssocRight, 
-    inFix "-<+" (BRS (NONE, ALL)) AssocNone,
-    inFix "+<-" (BRS (ALL, NONE)) AssocNone,
-    inFix "+<+" (BRS (ALL, ALL)) AssocNone,
-    inFix "-~-" (BRP (NONE, NONE)) AssocNone,
-    inFix "-~+" (BRP (NONE, ALL)) AssocNone,
-    inFix "+~-" (BRP (ALL, NONE)) AssocNone,
-    inFix "+~+" (BRP (ALL, ALL)) AssocNone]]
+  inFix "-<-" (BRS (NONE,NONE)) AssocRight,
+  inFix "-<+" (BRS (NONE, ALL)) AssocRight,
+  inFix "+<-" (BRS (ALL, NONE)) AssocRight,
+  inFix "+<+" (BRS (ALL, ALL)) AssocRight,
+  inFix "-~-" (BRP (NONE, NONE)) AssocRight,
+  inFix "-~+" (BRP (NONE, ALL)) AssocRight,
+  inFix "+~-" (BRP (ALL, NONE)) AssocRight,
+  inFix "+~+" (BRP (ALL, ALL)) AssocRight]]
 
 lexer = makeTokenParser languageDef
 
@@ -139,7 +142,7 @@ parenz = do void $ char '('
             e <-  expr 
             void $ char ')'
             void spaces
-            return e
+            return (PAREN e)
 
 parseExpr   :: Parser T
 parseExpr = do phr <- expr
@@ -177,4 +180,19 @@ parseCop str = case parse coplandExpr "" str of
                     Right r -> r
 
 checkSame :: T -> T -> Bool 
-checkSame t1 t2 = pprint t1 == pprint t2
+checkSame t1 t2 = transAST_T_Cop t1 == transAST_T_Cop t2
+
+quickCheck_parsable     :: String -> Bool
+quickCheck_parsable t   = case  parse coplandExpr "" t of
+                                Left e -> False
+                                Right r -> True
+
+involutiveParse :: String -> Bool
+involutiveParse s = case transAST_T_Cop (parsePhrase s) == s of
+                        True -> True
+                        False -> error $ show (parsePhrase s, (transAST_T_Cop (parsePhrase s)))
+
+involutiveAST :: T -> Bool
+involutiveAST s = case parsePhrase (transAST_T_Cop s) == s of
+                        True -> True
+                        False -> error $ show (transAST_T_Cop s, (parsePhrase (transAST_T_Cop s)))
