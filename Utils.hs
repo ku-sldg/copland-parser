@@ -15,11 +15,12 @@ printASPT_Coq e n
             | show n == "CPY" = return ("CPY", e)
             | show n == "SIG" = return ("SIG", e)
             | show n == "HSH" = return ("HSH", e)
-            | show n == "NULL" = Nothing
+            | show n == "NULL" = Nothing -- TODO: Actually implement NULL in Coq def
 printASPT_Coq e (SPS s1 plc s2) = do    (s1', e') <- printASym_Coq e s1
                                         (plc', e'') <- printPlace_Coq e' plc
                                         (s2', e''') <- printTSym_Coq e'' s2
-                                        return ("(ASPC (asp_paramsC " ++ s1' ++ " [] " ++ plc' ++ " " ++ s2' ++ "))", e''')
+                                        -- Default args here are 'nil' = empty arg list
+                                        return ("(ASPC (asp_paramsC " ++ s1' ++ " nil " ++ plc' ++ " " ++ s2' ++ "))", e''')
 
 printASym_Coq                    :: Env -> SYMBOL -> Maybe (String, Env)
 printASym_Coq (pM,asM,tsM,i) sym        = case lookup sym asM of
@@ -69,20 +70,19 @@ mapFn (x,y) = "asp_" ++ show y
 
 -- Translates Copland AST -> Coq String
 printCopland_Coq        :: Env -> COPLAND -> Maybe String
-printCopland_Coq env (STAR plc term) = Nothing -- This is a bad case
+printCopland_Coq env (STAR plc term) = Nothing -- This is a bad case - No Coq def yet
 printCopland_Coq env (COP_PHRASE phr) = do      (r,(pM,asM,tsM,i)) <- printPhrase_Coq env phr
-                                                -- error $ show pM ++ show asM ++ show tsM
                                                 let tsStr = (foldl (\x -> \a -> x ++ "Definition " ++ a ++ " : TARG_ID. Admitted.\n") "" (map mapFn tsM))
                                                 let asStr = (foldl (\x -> \a -> x ++ "Definition " ++ a ++ " : ASP_ID. Admitted.\n") "" (map mapFn asM))
                                                 let pStr = (foldl (\x -> \(a,b) -> x ++ "Definition asp_" ++ show b ++ " : Plc := " ++ show b ++ ".\n") "" pM)
-                                                return (asStr ++ tsStr ++ pStr ++ "Compute " ++ r ++ ".")
+                                                return (asStr ++ tsStr ++ pStr ++ "Definition cop_phrase : Term := " ++ r ++ ".\n")
 
-printCoq            :: COPLAND -> Maybe String
+printCoq            :: COPLAND -> Maybe String -- Only adds default empty env
 printCoq            = printCopland_Coq ([],[],[],0)
 
 transCop_Coq        :: String -> String
 transCop_Coq str    = case printCoq (parseCop str) of
                            Just x -> x
-                           Nothing -> error $ "error"
+                           Nothing -> error $ "error failed to print"
 
 transCop_Coq_IO str             = putStrLn (transCop_Coq str)
