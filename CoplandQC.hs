@@ -8,7 +8,6 @@ import PrettyPrinter
 import Utils
 
 --import QuickCheck
---import System.Random
 import Test.QuickCheck
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Function
@@ -24,8 +23,8 @@ genSig = return (ASPT SIG)
 genNull :: Gen T
 genNull = return (ASPT NULL)
 
-genInt :: Gen Int
-genInt = chooseInt (0,100)
+genInt :: Int -> Gen Int
+genInt max = chooseInt (0,max)
 
 genChar :: Gen Char
 genChar = elements ['a'..'z']
@@ -60,7 +59,7 @@ genNoneB = return NONE
 
 genASPT :: Gen T
 genASPT =
-  do oneof [genCpy, genHsh, genSig, genNull, genAspc]
+  do oneof [genCpy, genHsh, genSig, genAspc] -- TODO: Null not in Coq yet genNull] 
 
 genParen :: Int -> Gen T
 genParen n = do ph <- genT n
@@ -116,24 +115,22 @@ genT3 n =
 instance Arbitrary T where
   arbitrary = sized $ \n -> genT (rem n 10)
 
-checkTerms :: IO ()
-checkTerms = quickCheckWith stdArgs {maxSuccess = 100} quickCheck_parsable
+testCoq_Trans :: Int -> IO String
+testCoq_Trans n = do  let x = generate (genT n)
+                      x' <- x
+                      case printCoq (COP_PHRASE x') of
+                        Nothing -> error $ "failure to print " ++ show x'
+                        Just x -> return x
 
-testCoq_Trans :: IO [String]
-testCoq_Trans = do  let x = sample' (genT 10)
-                    x' <- x
-                    let x'' = map (\x' -> printCoq x') (map (\x' -> (COP_PHRASE x')) (x'))
-                    let filt = filter (\x -> if x == Nothing then False else True) x''
-                    let mapped = map (\x -> do (s,e) <- x 
-                                               return s) filt
-                    let mapped2 = map (\x -> fromJust x) mapped
-                    return mapped2
-
-out_test = do let file = "coq_test.v"
-              out <- testCoq_Trans
-              let out' = foldl (\x -> \a -> x ++ "\nCompute " ++ a ++ ".") "" out
-              writeFile file (out')
+-- Creates an example copland phrase and translates it to Coq
+--      f controls output file
+--      n controls the complexity of the generated phrase
+out_test f n = do out <- testCoq_Trans n
+                  writeFile f (out_test_coq_defs ++ out)
 
 
 checkParser :: Int -> IO ()
 checkParser n = quickCheckWith stdArgs {maxSuccess = n} involutiveAST
+
+out_test_coq_defs :: String
+out_test_coq_defs = "Definition Plc: Set := nat.\nDefinition N_ID: Set := nat.\nDefinition Event_ID: Set := nat.\nDefinition ASP_ID: Set. Admitted.\nDefinition TARG_ID: Set. Admitted.\nDefinition Arg: Set. Admitted.\nInductive ASP_PARAMS: Set :=\n| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.\nInductive Evidence: Set :=\n| mt: Evidence\n| uu: (*ASP_PARAMS ->*) ASP_PARAMS ->\n      (*Evidence ->*) Plc -> Evidence -> Evidence\n| gg: Plc -> Evidence -> Evidence\n| hh: Plc -> Evidence -> Evidence\n| nn: N_ID -> Evidence\n| ss: Evidence -> Evidence -> Evidence\n| pp: Evidence -> Evidence -> Evidence.\nInductive ASP: Set :=\n| CPY: ASP\n| ASPC: ASP_PARAMS -> ASP\n| SIG: ASP\n| HSH: ASP.\nInductive SP: Set :=\n| ALL\n| NONE.\nDefinition Split: Set := (SP * SP).\nInductive Term: Set :=\n| asp: ASP -> Term\n| att: Plc -> Term -> Term\n| lseq: Term -> Term -> Term\n| bseq: Split -> Term -> Term -> Term\n| bpar: Split -> Term -> Term -> Term.\n"
