@@ -3,29 +3,45 @@ import CoplandLang
 import CoplandParser
 
 -- Translates each seen symbol String -> Nat representing that symbol
-type PlaceMap = [(String, Int)]
+type PlaceMap   = [(String, Int)]
 
+type ASP_SymMap     = [(String, Int)]
+type TARG_SymMap     = [(String, Int)]
 
-printASPT_Coq           :: PlaceMap -> ASP -> Maybe (String, PlaceMap)
+type Env        = (PlaceMap, ASP_SymMap, TARG_SymMap, Int)
+
+printASPT_Coq           :: Env -> ASP -> Maybe (String, Env)
 printASPT_Coq e n
             | show n == "CPY" = return ("CPY", e)
             | show n == "SIG" = return ("SIG", e)
             | show n == "HSH" = return ("HSH", e)
             | show n == "NULL" = Nothing
--- string needs quotes for coq, but cant have back slashes. currently does
--- TODO: This Coq translation is certainly not correct yet
-printASPT_Coq e (SPS s1 plc s2) = Nothing -- "(ASPC " ++ show s1 ++ " " ++ show plc ++ " " ++ show s2 ++ ")"
+printASPT_Coq e (SPS s1 plc s2) = do    (s1', e') <- printASym_Coq e s1
+                                        (plc', e'') <- printPlace_Coq e' plc
+                                        (s2', e''') <- printTSym_Coq e'' s2
+                                        return ("(ASPC (asp_paramsC " ++ s1' ++ " [] " ++ plc' ++ " " ++ s2' ++ "))", e''')
 
-
-
-printPlace_Coq          :: PlaceMap -> PLACE -> Maybe (String, PlaceMap)
-printPlace_Coq e (PLC sym)  = case lookup sym e of
+printASym_Coq                    :: Env -> SYMBOL -> Maybe (String, Env)
+printASym_Coq (pM,asM,tsM,i) sym        = case lookup sym asM of
                                                 -- new index is length, add at spot
-                                    Nothing -> return (show (length e), [(sym, (length e))])
-                                    Just x -> return (show x, e)
+                                                Nothing -> return ("asp_" ++ show i, (pM,[(sym, i)] ++ asM,tsM, i+1))
+                                                Just x -> return ("asp_" ++ show x, (pM,asM, tsM,i))
+
+printTSym_Coq                    :: Env -> SYMBOL -> Maybe (String, Env)
+printTSym_Coq (pM,asM,tsM,i) sym        = case lookup sym tsM of
+                                                -- new index is length, add at spot
+                                                Nothing -> return ("asp_" ++ show i, (pM,asM,[(sym, i)] ++ tsM, i+1))
+                                                Just x -> return ("asp_" ++ show x, (pM,asM,tsM,i))
+
+
+printPlace_Coq                          :: Env -> PLACE -> Maybe (String, Env)
+printPlace_Coq (pM,asM,tsM,i) (PLC sym)  = case lookup sym pM of
+                                                -- new index is length, add at spot
+                                                Nothing -> return ("asp_" ++ show i, ([(sym, i)] ++ pM, asM, tsM, i+1))
+                                                Just x -> return ("asp_" ++ show x, (pM,asM,tsM,i))
 
 -- Translates Copland Phrase AST -> Coq String
-printPhrase_Coq         :: PlaceMap -> T -> Maybe (String, PlaceMap)
+printPhrase_Coq         :: Env -> T -> Maybe (String, Env)
 printPhrase_Coq env (ASPT asp)      = do    (asp',e') <- printASPT_Coq env asp
                                             return ("(asp " ++ asp' ++ ")", e')
 printPhrase_Coq env (AT plc phr)    = do    (plc',e') <- printPlace_Coq env plc
@@ -48,14 +64,25 @@ printPhrase_Coq env (BRP s phr1 phr2)
 printPhrase_Coq env (PAREN phr)     = do    (phr1', e') <- printPhrase_Coq env phr
                                             return ("(" ++ phr1' ++ ")", e')
 
+mapFn :: (String, Int) -> String
+mapFn (x,y) = "asp_" ++ show y
+
 -- Translates Copland AST -> Coq String
-printCopland_Coq        :: PlaceMap -> COPLAND -> Maybe (String, PlaceMap)
+printCopland_Coq        :: Env -> COPLAND -> Maybe String
 printCopland_Coq env (STAR plc term) = Nothing -- This is a bad case
-printCopland_Coq env (COP_PHRASE phr) = do  (r,e'') <- printPhrase_Coq env phr
-                                            return (r,e'')
+printCopland_Coq env (COP_PHRASE phr) = do      (r,(pM,asM,tsM,i)) <- printPhrase_Coq env phr
+                                                -- error $ show pM ++ show asM ++ show tsM
+                                                let tsStr = (foldl (\x -> \a -> x ++ "Definition " ++ a ++ " : TARG_ID. Admitted.\n") "" (map mapFn tsM))
+                                                let asStr = (foldl (\x -> \a -> x ++ "Definition " ++ a ++ " : ASP_ID. Admitted.\n") "" (map mapFn asM))
+                                                let pStr = (foldl (\x -> \(a,b) -> x ++ "Definition asp_" ++ show b ++ " : Plc := " ++ show b ++ ".\n") "" pM)
+                                                return (asStr ++ tsStr ++ pStr ++ "Compute " ++ r ++ ".")
 
-printCoq            :: COPLAND -> Maybe (String, PlaceMap)
-printCoq            = printCopland_Coq []
+printCoq            :: COPLAND -> Maybe String
+printCoq            = printCopland_Coq ([],[],[],0)
 
-transCop_Coq        :: String -> Maybe (String, PlaceMap)
-transCop_Coq str    = printCoq (parseCop str)
+transCop_Coq        :: String -> String
+transCop_Coq str    = case printCoq (parseCop str) of
+                           Just x -> x
+                           Nothing -> error $ "error"
+
+transCop_Coq_IO str             = putStrLn (transCop_Coq str)
