@@ -46,9 +46,7 @@ term    = parenz
 table   :: OperatorTable Char () T
 table   = [ 
   [ inFix "->" LN AssocRight ],
-  -- TODO: Technically we introduce a precdence here but the spec says otherwise
-  -- Additionaly, this leaves ambiguity in our grammer
-  -- TODO: Arbitrary did right associativity here, but not sure
+  -- TODO: Arbitrary introduction of right associativity here, for branch operators
   [
   inFix "-<-" (BRS (NONE,NONE)) AssocRight,
   inFix "-<+" (BRS (NONE, ALL)) AssocRight,
@@ -182,15 +180,16 @@ parseCop str = case parse coplandExpr "" str of
 checkSame :: T -> T -> Bool 
 checkSame t1 t2 = transAST_T_Cop t1 == transAST_T_Cop t2
 
-quickCheck_parsable     :: String -> Bool
-quickCheck_parsable t   = case  parse coplandExpr "" t of
-                                Left e -> False
-                                Right r -> True
+-- Need quickCheck to generate good copland string for these to be valuable
+-- quickCheck_parsable     :: String -> Bool
+-- quickCheck_parsable t   = case  parse coplandExpr "" t of
+--                                 Left e -> False
+--                                 Right r -> True
 
-involutiveParse :: String -> Bool
-involutiveParse s = case transAST_T_Cop (parsePhrase s) == s of
-                        True -> True
-                        False -> error $ show (parsePhrase s, (transAST_T_Cop (parsePhrase s)))
+-- involutiveParse :: String -> Bool
+-- involutiveParse s = case transAST_T_Cop (parsePhrase s) == s of
+--                         True -> True
+--                         False -> error $ show (parsePhrase s, (transAST_T_Cop (parsePhrase s)))
 
 involutiveAST :: T -> Bool
 involutiveAST s = case parsePhrase (transAST_T_Cop s) == s of
