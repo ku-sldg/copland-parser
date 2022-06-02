@@ -3,6 +3,7 @@ import CoplandLang (COPLAND)
 import Utils (transCop_Coq_IO, printCoq)
 import CoplandParser (parseCop)
 import CoplandQC (out_test, checkParser)
+import CoplandTypeChecker
 
 ----- Utilities -----
 translate_Cop_Coq :: String -> IO ()
@@ -10,6 +11,8 @@ translate_Cop_Coq = transCop_Coq_IO
 
 parse_to_AST :: String -> COPLAND
 parse_to_AST = parseCop
+
+pta = parse_to_AST
 
 print_AST :: COPLAND -> String
 print_AST x = case (printCoq x) of

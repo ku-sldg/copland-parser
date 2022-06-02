@@ -36,12 +36,12 @@ languageDef =
             , commentLine = "%"
             }
 
-expr  = buildExpressionParser table term <?> "phrase"
+expr  = buildExpressionParser table term-- <?> "phrase"
 
 term    = parenz
           <|> gen_atExpr
           <|> asptExpr
-          <?> "unknown input"
+          -- <?> "unknown input"
 
 table   :: OperatorTable Char () T
 table   = [ 
@@ -108,11 +108,11 @@ digitsExpr = do dig <- natural lexer
                 return ("p" ++ (show dig))
 
 symbolExpr :: Parser SYMBOL
-symbolExpr = do sym <- (identifier lexer <?> "valid identifier starting with lowercase, remainder alpha-numeric + '_'")
+symbolExpr = do sym <- (identifier lexer <?> "(valid identifier starting with lowercase, remainder alpha-numeric + '_')")
                 return sym 
 
 placeExpr :: Parser PLACE
-placeExpr = do plc <- symbolExpr <|> digitsExpr <?> "place"
+placeExpr = do plc <- symbolExpr <|> digitsExpr
                return (PLC plc)
 
 -- AT Parser
@@ -156,7 +156,7 @@ parsePhrase str = case parse parseExpr "" str of
 coplandStarExpr :: Parser COPLAND
 coplandStarExpr = do char '*'
                      void spaces
-                     place <- placeExpr
+                     place <- placeExpr <?> "missing initial place"
                      void spaces
                      char ':'
                      void spaces
