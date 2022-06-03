@@ -6,6 +6,7 @@ import CoplandParser
 import CoplandLang
 import PrettyPrinter
 import Utils
+import CoplandTypeChecker
 
 --import QuickCheck
 import Test.QuickCheck
@@ -137,6 +138,12 @@ out_test f n = do out <- testCoq_Trans n
 
 checkParser :: Int -> IO ()
 checkParser n = quickCheckWith stdArgs {maxSuccess = n} involutiveAST
+
+checkTC :: Int -> IO ()
+checkTC n = quickCheckWith stdArgs {maxSuccess = n} quickTC
+
+checkSIG_HSH :: Int -> IO ()
+checkSIG_HSH n = quickCheckWith stdArgs {maxSuccess = n} quickSIG_HSH
 
 out_test_coq_defs :: String
 out_test_coq_defs = "Definition Plc: Set := nat.\nDefinition N_ID: Set := nat.\nDefinition Event_ID: Set := nat.\nDefinition ASP_ID: Set. Admitted.\nDefinition TARG_ID: Set. Admitted.\nDefinition Arg: Set. Admitted.\nInductive ASP_PARAMS: Set :=\n| asp_paramsC: ASP_ID -> (list Arg) -> Plc -> TARG_ID -> ASP_PARAMS.\nInductive Evidence: Set :=\n| mt: Evidence\n| uu: (*ASP_PARAMS ->*) ASP_PARAMS ->\n      (*Evidence ->*) Plc -> Evidence -> Evidence\n| gg: Plc -> Evidence -> Evidence\n| hh: Plc -> Evidence -> Evidence\n| nn: N_ID -> Evidence\n| ss: Evidence -> Evidence -> Evidence\n| pp: Evidence -> Evidence -> Evidence.\nInductive ASP: Set :=\n| CPY: ASP\n| ASPC: ASP_PARAMS -> ASP\n| SIG: ASP\n| HSH: ASP.\nInductive SP: Set :=\n| ALL\n| NONE.\nDefinition Split: Set := (SP * SP).\nInductive Term: Set :=\n| asp: ASP -> Term\n| att: Plc -> Term -> Term\n| lseq: Term -> Term -> Term\n| bseq: Split -> Term -> Term -> Term\n| bpar: Split -> Term -> Term -> Term.\n"

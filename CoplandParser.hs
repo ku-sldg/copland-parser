@@ -195,3 +195,5 @@ involutiveAST :: T -> Bool
 involutiveAST s = case parsePhrase (transAST_T_Cop s) == s of
                         True -> True
                         False -> error $ show (transAST_T_Cop s, (parsePhrase (transAST_T_Cop s)))
+
+

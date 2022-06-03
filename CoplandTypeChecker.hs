@@ -4,7 +4,7 @@ import PrettyPrinter
 
 -- If we have a        (Sign, Hash)
 checkSign_Hash                      :: (Bool, Bool) -> T -> (Bool, Bool)
-                                    -- If we have not 
+                                    -- If we have not               or possibly already failed
 checkSign_Hash (s,h) (ASPT SIG)     = if s == False then (True, False) else (s, h)
 checkSign_Hash (s,h) (ASPT HSH)     = (s, True)
 checkSign_Hash (s,h) (ASPT _)       = (False, False)
@@ -67,6 +67,8 @@ checkSH :: COPLAND -> (Bool,String)
 checkSH (COP_PHRASE t) = case (checkSign_Hash (False, False) t) of
                             (True, True) -> (False,"Failed - SIG irrecoverable due to HSH")
                             (_, _) -> (True,"Passed")
+                            -- TODO: Implement the equivalent in Coq someday
+checkSH (STAR plc t) = (False, "'* place : phrases' are not allowed currently \n\t\t\tPlease just specify the phrase")
 
 -- Sequences the type checking operations so the first fail halts
 (-->) :: (Bool, String) -> (Bool, String) -> (Bool, String)
@@ -83,7 +85,6 @@ typeCheckASP :: ASP -> (Bool,String)
 typeCheckASP NULL = (False, "Coq equivalent of NULL does not exist")
 typeCheckASP _ = (True, "")
 
--- TODO: Can obfuscate a TERMINAL using parens
 typeCheckT :: T -> (Bool, String)
 typeCheckT (LN f s)     = typeCheckT f --> typeCheckT s
 typeCheckT (AT plc t)   = typeCheckPlc plc --> typeCheckT t
@@ -101,3 +102,13 @@ typeCheckCop (COP_PHRASE t) = typeCheckT t
 typeCheckCop (COMMENT s) = (True, "")
 
 tc = typeCheckCop
+
+quickTC         :: T -> Bool
+quickTC s       = case typeCheckT (s) of
+                        (True,_) -> True
+                        (False,mess) -> error $ show (transAST_T_Cop s, mess)
+
+quickSIG_HSH    :: T -> Bool
+quickSIG_HSH s  = case (checkSH (COP_PHRASE s)) of
+                    (False,s') -> error $  show (transAST_T_Cop s, s')
+                    (True, s') -> True
