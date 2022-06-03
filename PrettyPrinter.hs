@@ -22,8 +22,8 @@ transAST_T_Cop (ASPT n)
 transAST_T_Cop (ASPT (SPS s1 plc s2)) = s1 ++ " " ++ transAST_PLC_Cop plc ++ " " ++ s2
 transAST_T_Cop (LN n m) = transAST_T_Cop n ++ " -> " ++ transAST_T_Cop m
 transAST_T_Cop (AT n m) = "@" ++ transAST_PLC_Cop n ++ " " ++ transAST_T_Cop m
+transAST_T_Cop (AT_S n m) = "@" ++ transAST_PLC_Cop n ++ " [" ++ transAST_T_Cop m ++ "]"
 transAST_T_Cop (BRS (b1,b2) n m) = transAST_T_Cop n ++ " " ++ transAST_SP_Cop b1 ++ "<" ++                                   transAST_SP_Cop b2 ++ " " ++ transAST_T_Cop m
 transAST_T_Cop (BRP (b1,b2) n m) = transAST_T_Cop n ++ " " ++ transAST_SP_Cop b1 ++ "~" ++                                   transAST_SP_Cop b2 ++ " " ++ transAST_T_Cop m
 transAST_T_Cop (PAREN phr)  = "(" ++ transAST_T_Cop phr ++ ")"
-transAST_T_Cop _ = error "not a datatype"
 

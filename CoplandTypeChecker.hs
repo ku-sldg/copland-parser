@@ -2,6 +2,72 @@ module CoplandTypeChecker where
 import CoplandLang
 import PrettyPrinter
 
+-- If we have a        (Sign, Hash)
+checkSign_Hash                      :: (Bool, Bool) -> T -> (Bool, Bool)
+                                    -- If we have not 
+checkSign_Hash (s,h) (ASPT SIG)     = if s == False then (True, False) else (s, h)
+checkSign_Hash (s,h) (ASPT HSH)     = (s, True)
+checkSign_Hash (s,h) (ASPT _)       = (False, False)
+
+checkSign_Hash (s,h) (AT plc t)     = checkSign_Hash (s,h) t
+checkSign_Hash (s,h) (AT_S plc t)   = checkSign_Hash (s,h) t
+
+checkSign_Hash (s,h) (LN f sec)     = do let (sf, hf) = (checkSign_Hash (s,h) f)
+                                         if (sf == True && hf == True)
+                                             then (True, True)
+                                             else checkSign_Hash (sf,hf) sec
+
+checkSign_Hash (s,h) (BRS (sp1,sp2) f sec)
+                                                -- Only check if evidence passed
+                                    = case sp1 of
+                                        ALL -> case sp2 of
+                                                ALL -> -- Check both
+                                                    case (checkSign_Hash (s,h) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (s,h) sec
+                                                NONE -> -- Check only sp1 with above, reset below
+                                                    case (checkSign_Hash (s,h) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (False,False) sec
+                                        NONE -> case sp2 of
+                                                ALL -> -- Check only sp2 with above, reset below
+                                                    case (checkSign_Hash (False,False) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (s,h) sec
+                                                NONE -> -- Reset for both
+                                                    case (checkSign_Hash (False,False) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (False,False) sec
+
+checkSign_Hash (s,h) (BRP (sp1,sp2) f sec)
+                                                -- Only check if evidence passed
+                                    = case sp1 of
+                                        ALL -> case sp2 of
+                                                ALL -> -- Check both
+                                                    case (checkSign_Hash (s,h) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (s,h) sec
+                                                NONE -> -- Check only sp1 with above, reset below
+                                                    case (checkSign_Hash (s,h) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (False,False) sec
+                                        NONE -> case sp2 of
+                                                ALL -> -- Check only sp2 with above, reset below
+                                                    case (checkSign_Hash (False,False) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (s,h) sec
+                                                NONE -> -- Reset for both
+                                                    case (checkSign_Hash (False,False) f) of
+                                                        (True, True) -> (True,True)
+                                                        (s',h') -> checkSign_Hash (False,False) sec
+
+checkSign_Hash (s,h) (PAREN t)      = checkSign_Hash (s,h) t
+
+checkSH :: COPLAND -> (Bool,String)
+checkSH (COP_PHRASE t) = case (checkSign_Hash (False, False) t) of
+                            (True, True) -> (False,"Failed - SIG irrecoverable due to HSH")
+                            (_, _) -> (True,"Passed")
+
 -- Sequences the type checking operations so the first fail halts
 (-->) :: (Bool, String) -> (Bool, String) -> (Bool, String)
 x --> y = case x of
@@ -14,22 +80,18 @@ typeCheckPlc :: PLACE -> (Bool,String)
 typeCheckPlc (PLC sym) = (True, "")
 
 typeCheckASP :: ASP -> (Bool,String)
+typeCheckASP NULL = (False, "Coq equivalent of NULL does not exist")
 typeCheckASP _ = (True, "")
 
 -- TODO: Can obfuscate a TERMINAL using parens
 typeCheckT :: T -> (Bool, String)
-typeCheckT (LN f s)     = case f of
-                            (ASPT x) -> typeCheckT f --> (False, "Cannot have sequence starting with '" ++ transAST_T_Cop (ASPT x) ++ "' ")
-                            _ -> typeCheckT f --> (case s of
-                                                    (ASPT x) -> typeCheckT s --> (True, "")
-                                                    (LN f' s') -> typeCheckT s
-                                                    s' -> (False, "Sequence must end with an ASPT terminal, not '" ++ transAST_T_Cop s' ++ "' "))
+typeCheckT (LN f s)     = typeCheckT f --> typeCheckT s
 typeCheckT (AT plc t)   = typeCheckPlc plc --> typeCheckT t
 typeCheckT (AT_S plc t) = typeCheckPlc plc --> typeCheckT t
 typeCheckT (BRS (s1,s2) t1 t2)
-                        = typeCheckT t1 --> typeCheckT t2
+                        = (not ((s1 == NONE) && (s2 == NONE)), "'-<-' Causes evidence erasure") --> typeCheckT t1 --> typeCheckT t2
 typeCheckT (BRP (s1,s2) t1 t2)
-                        = typeCheckT t1 --> typeCheckT t2
+                        = (not ((s1 == NONE) && (s2 == NONE)), "'-~-' Causes evidence erasure") --> typeCheckT t1 --> typeCheckT t2
 typeCheckT (PAREN t)    = typeCheckT t
 typeCheckT (ASPT asp)   = typeCheckASP asp
 

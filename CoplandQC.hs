@@ -71,6 +71,12 @@ genAt n =
      ph <- genT n
      return (AT pl ph)
 
+genAt_S :: Int -> Gen T
+genAt_S n =
+  do pl <- genPlace
+     ph <- genT n
+     return (AT_S pl ph)
+
 genLn :: Int -> Gen T
 genLn n =
   do p1 <- genT3 n -- Cannot have recursive left arrow
@@ -98,7 +104,7 @@ genT :: Int -> Gen T
 genT 0 =
   do genASPT
 genT n = 
-  do oneof [genASPT, genParen (n-1), genLn (n-1), genAt (n-1), genBrs (n-1), genBrp (n-1)]
+  do oneof [genASPT, genParen (n-1), genLn (n-1), genAt (n-1), genAt_S (n-1), genBrs (n-1), genBrp (n-1)]
 
 genT2 :: Int -> Gen T
 genT2 0 =
