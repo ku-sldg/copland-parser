@@ -7,7 +7,7 @@ checkSign_Hash                      :: (Bool, Bool) -> T -> (Bool, Bool)
                                     -- If we have not               or possibly already failed
 checkSign_Hash (s,h) (ASPT SIG)     = if s == False then (True, False) else (s, h)
 checkSign_Hash (s,h) (ASPT HSH)     = (s, True)
-checkSign_Hash (s,h) (ASPT _)       = (False, False)
+checkSign_Hash (s,h) (ASPT _)       = (s,h)
 
 checkSign_Hash (s,h) (AT plc t)     = checkSign_Hash (s,h) t
 checkSign_Hash (s,h) (AT_S plc t)   = checkSign_Hash (s,h) t
