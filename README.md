@@ -23,6 +23,7 @@ A parser for the Copland DSL for layered attestation
 - Compatible OCaml versions: 4.12 or later
 - Additional dependencies:
   - [ExtLib](https://github.com/coq-community/coq-ext-lib)
+  - [JSON](https://github.com/liyishuai/coq-json)
   - [RocqCandy](https://github.com/ku-sldg/rocq-candy)
   - [CoplandSpec](https://github.com/ku-sldg/copland-spec)
   - [Parsec](https://github.com/liyishuai/coq-parsec)

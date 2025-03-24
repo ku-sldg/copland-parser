@@ -28,6 +28,11 @@ dependencies:
       name: "coq-ext-lib"
       version: '{ >= "0.13.0" }'
       lib_name: "ExtLib"
+  - description: "[JSON](https://github.com/liyishuai/coq-json)"
+    opam:
+      name: "coq-json"
+      version: '{ >= "0.2.0" }'
+      lib_name: "JSON"
   - description: "[RocqCandy](https://github.com/ku-sldg/rocq-candy)"
     opam:
       name: "rocq-candy"
@@ -47,11 +52,12 @@ dependencies:
     opam:
       name: "menhir"
       version: '{ >= "20240715" }'
+      lib_name: ""
   - description: "[MenhirLib](https://gitlab.inria.fr/fpottier/menhir/-/tree/master/coq-menhirlib/)"
     opam:
       name: "coq-menhirlib"
       version: '{ >= "20240715" }'
-      lib_name: "MenhirLibParser"
+      lib_name: "MenhirLib"
 
 ci_extra_repos:
   - description: "KU-SLDG Packages"
