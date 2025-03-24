@@ -1,14 +1,14 @@
 ---
 # This file is used to configure the project metadata
-fullname: <Project Name> # This is a full name for the project
-shortname: <Project Short Name> # NOTE: This is the presumed REPOSITORY name
-lib_name: <Project Library Name> # NOTE: This is the name of the library that will be used in the Coq code
-opam_name: <opam-name> # i.e. coq-Base64
-synopsis: "<Project Synopsis>"
-description: "<Project Description>"
+fullname: Copland Parser
+shortname: copland-parser
+lib_name: CoplandParser
+opam_name: coq-copland-parser
+synopsis: "A parser for the Copland language"
+description: "A parser for the Copland DSL for layered attestation"
 authors:
-  - name: "<Author Name>"
-    email: "<Author Email>"
+  - name: "Will Thomas"
+    email: "30wthomas@ku.edu"
 opam-file-maintainer: "30wthomas@ku.edu" # Need a strong default here or we will accidentally email a Coq developer
 opam-file-version: "0.1.0"
 
@@ -33,6 +33,25 @@ dependencies:
       name: "rocq-candy"
       version: '{ >= "0.2.1" }'
       lib_name: "RocqCandy"
+  - description: "[CoplandSpec](https://github.com/ku-sldg/copland-spec)"
+    opam:
+      name: "coq-copland-spec"
+      version: '{ >= "0.1.0" }'
+      lib_name: "CoplandSpec"
+  - description: "[Parsec](https://github.com/liyishuai/coq-parsec)"
+    opam:
+      name: "coq-parsec"
+      version: '{ >= "0.2.0" }'
+      lib_name: "Parsec"
+  - description: "[Menhir](http://gallium.inria.fr/~fpottier/menhir/)"
+    opam:
+      name: "menhir"
+      version: '{ >= "20240715" }'
+  - description: "[MenhirLib](https://gitlab.inria.fr/fpottier/menhir/-/tree/master/coq-menhirlib/)"
+    opam:
+      name: "coq-menhirlib"
+      version: '{ >= "20240715" }'
+      lib_name: "MenhirLibParser"
 
 ci_extra_repos:
   - description: "KU-SLDG Packages"
