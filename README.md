@@ -29,6 +29,7 @@ A parser for the Copland DSL for layered attestation
   - [Parsec](https://github.com/liyishuai/coq-parsec)
   - [Menhir](http://gallium.inria.fr/~fpottier/menhir/)
   - [MenhirLib](https://gitlab.inria.fr/fpottier/menhir/-/tree/master/coq-menhirlib/)
+  - [QuickChick](https://github.com/QuickChick/QuickChick)
   - [Dune](https://dune.build) 3.17 or later
 - Related publication(s): none
 

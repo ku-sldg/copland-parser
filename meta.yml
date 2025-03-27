@@ -22,6 +22,7 @@ opam-file-version: "0.1.0"
 #   - name: "<Keyword1>"
 #   - name: "<Keyword2>"
 
+coq_trans_deps_workaround: true
 dependencies:
   - description: "[ExtLib](https://github.com/coq-community/coq-ext-lib)"
     opam:
@@ -36,12 +37,12 @@ dependencies:
   - description: "[RocqCandy](https://github.com/ku-sldg/rocq-candy)"
     opam:
       name: "rocq-candy"
-      version: '{ >= "0.2.1" }'
+      version: '{ >= "0.2.2" }'
       lib_name: "RocqCandy"
   - description: "[CoplandSpec](https://github.com/ku-sldg/copland-spec)"
     opam:
       name: "coq-copland-spec"
-      version: '{ >= "0.1.0" }'
+      version: '{ >= "0.1.1" }'
       lib_name: "CoplandSpec"
   - description: "[Parsec](https://github.com/liyishuai/coq-parsec)"
     opam:
@@ -52,12 +53,19 @@ dependencies:
     opam:
       name: "menhir"
       version: '{ >= "20240715" }'
-      lib_name: ""
   - description: "[MenhirLib](https://gitlab.inria.fr/fpottier/menhir/-/tree/master/coq-menhirlib/)"
     opam:
       name: "coq-menhirlib"
       version: '{ >= "20240715" }'
       lib_name: "MenhirLib"
+  - description: "[QuickChick](https://github.com/QuickChick/QuickChick)"
+    opam:
+      name: "coq-quickchick"
+      version: '{ >= "2.1.0" }'
+      lib_name: "QuickChick"
+
+coq_menhir_files:
+  - target_file_name: Parser.v
 
 ci_extra_repos:
   - description: "KU-SLDG Packages"

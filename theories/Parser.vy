@@ -12,23 +12,23 @@ Open Scope list_scope.
 
 %token TRUE FALSE NULL COLON COMMA EOF
 %token LBRACE RBRACE BANG HASH HOOK STAR AT LBRACKET RBRACKET LPAREN RPAREN 
-  PPP NPP PPN NPN PSP NSP PSN NSN RARROW
-
+  DASH PLUS LANGLE RANGLE TILDE
 
 %token<Z>      NUMBER
 %token<string> NAME
 
-%start<Term> p_term
+%start<Term> p_term_full
 
 %type<json>      p_element
 %type<list json> p_elements p_array
 %type<string * json>        p_member
 %type<list (string * json)> p_members p_object
-%type<ASP> p_asp
-%type<Term> p_term_extra
-%type<Term> p_term_term
 
-%type<Term> p_branch
+%type<ASP> p_asp
+%type<SP> p_op
+%type<Term> p_term0
+%type<Term> p_term1
+%type<Term> p_term2
 
 %%
 
@@ -68,24 +68,23 @@ p_asp :
 | HOOK { APPR }
 | STAR NAME { ENC $2 }
 
-p_term_term :
+p_op :
+| DASH { NONE }
+| PLUS { ALL }
+
+p_term2 :
+| LPAREN p_term0 RPAREN { $2 }
 | p_asp { asp $1 }
+| AT NAME p_term2 { att $2 $3 }
+| AT NAME LBRACKET p_term0 RBRACKET { att $2 $4 }
 
-p_branch : 
-| p_term_extra PPP p_term_term { bpar (ALL, ALL) $1 $3 }
-| p_term_extra NPP p_term_term { bpar (NONE, ALL) $1 $3 }
-| p_term_extra PPN p_term_term { bpar (ALL, NONE) $1 $3 }
-| p_term_extra NPN p_term_term  { bpar (NONE, NONE) $1 $3 }
-| p_term_extra PSP p_term_term  { bseq (ALL, ALL) $1 $3 }
-| p_term_extra NSP p_term_term  { bseq (NONE, ALL) $1 $3 }
-| p_term_extra PSN p_term_term  { bseq (ALL, NONE) $1 $3 }
-| p_term_extra NSN p_term_term  { bseq (NONE, NONE) $1 $3 }
+p_term1 :
+| p_term2 { $1 }
+| p_term1 p_op LANGLE p_op p_term2 { bseq ($2, $4) $1 $5 }
+| p_term1 p_op TILDE p_op p_term2 { bpar ($2, $4) $1 $5 }
 
-p_term_extra :
-| p_term_term { $1 }
-| AT NAME LBRACKET p_term_extra RBRACKET { att $2 $4 }
-| p_term_extra RARROW p_term_term { lseq $1 $3 }
-| p_branch { $1 }
-| LPAREN p_term_extra RPAREN { $2 }
+p_term0 :
+| p_term1 { $1 }
+| p_term1 DASH RANGLE p_term0 { lseq $1 $4 }
 
-p_term : p_term_extra EOF { $1 }
+p_term_full : p_term0 EOF { $1 }

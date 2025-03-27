@@ -4,7 +4,7 @@
 (coq.theory
  (name CoplandParser)
  (package coq-copland-parser)
- (theories ExtLib JSON RocqCandy CoplandSpec Parsec  MenhirLib)
+ 
  
  (synopsis "A parser for the Copland language"))
 

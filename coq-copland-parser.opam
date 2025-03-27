@@ -21,11 +21,12 @@ depends: [
   "coq" 
   "coq-ext-lib" { >= "0.13.0" }
   "coq-json" { >= "0.2.0" }
-  "rocq-candy" { >= "0.2.1" }
-  "coq-copland-spec" { >= "0.1.0" }
+  "rocq-candy" { >= "0.2.2" }
+  "coq-copland-spec" { >= "0.1.1" }
   "coq-parsec" { >= "0.2.0" }
   "menhir" { >= "20240715" }
   "coq-menhirlib" { >= "20240715" }
+  "coq-quickchick" { >= "2.1.0" }
 ]
 
 tags: [
