@@ -67,8 +67,8 @@ version:
 	echo "Only 2 files (presumably meta.yml and *.opam) changed. Proceeding to commit.\n"; \
 	git add $(META_FILE) *.opam ; \
 	git commit -m "Version $$VERSION" ; \
-	git tag -v -a $$VERSION -m "Version $$VERSION" ; \
-	git push origin --tags
+	git tag -a $$VERSION -m "Version $$VERSION" ; \
+	git push --tags
 
 publish%:
 # First, we set a new version number
