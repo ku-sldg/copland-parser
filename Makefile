@@ -55,7 +55,7 @@ version:
 # then we tag the commit with the version number
 # then we push the tag
 	@echo "Please enter a version number (e.g. 0.1.0):"
-	@read VERSION; 
+	@read VERSION; \
 	echo "Version: $$VERSION"; \
 	sed -i "s/opam-file-version: \".*\"/opam-file-version: \"$$VERSION\"/" $(META_FILE); \
 	echo "Generating meta files for new version\n"; \
